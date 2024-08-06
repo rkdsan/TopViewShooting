@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using static GameSection;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,27 +16,43 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         Application.targetFrameRate = 60;
-        
-        GameStart();
+        StartCoroutine(GameStart());
     }
 
-    private void GameStart()
+    private IEnumerator GameStart()
     {
-        _gameUI.SetPlayerUI(_player);
+        GameEventManager.ClearAll();
+        _gameUI.Init();
+        SetPlayer();
+        yield return WaitTimeManager.GetWaitTime(1);
+
+        foreach (var section in _sectionGroups)
+        {
+            section.gameObject.SetActive(false);
+        }
+
         _currentSectionGroupIndex = 0;
         StartSection(_currentSectionGroupIndex);
     }
 
+    private void SetPlayer()
+    {
+        _player.Init();
+        _gameUI.SetPlayerUI(_player);
+    }
+
     private void StartSection(int sectionGroupIndex)
     {
+        Debug.Log("섹션 그룹 스타트");
         var targetSection = _sectionGroups[sectionGroupIndex];
 
-        GameEventManager.Attach(GameEventType.SectionClear, targetSection, OnClearSectionGroup);
+        targetSection.SectionClearEvent += OnClearSection;
         targetSection.ActiveSection(_player);
     }
 
-    private void OnClearSectionGroup(object eventEmitter)
+    private void OnClearSection(GameSection section)
     {
+        Debug.Log("섹션 클리어 받음");
         if (IsAllClear())
         {
             EndGame();
@@ -42,7 +60,7 @@ public class GameManager : MonoBehaviour
         }
 
         _currentSectionGroupIndex++;
-        GameEventManager.Detach(GameEventType.SectionClear, eventEmitter, OnClearSectionGroup);
+        section.SectionClearEvent -= OnClearSection;
 
         StartSection(_currentSectionGroupIndex);
     }
@@ -55,6 +73,10 @@ public class GameManager : MonoBehaviour
     private void EndGame()
     {
         Debug.Log("게임 클리어");
+        var playerInput = _player.GetComponent<PlayerInput>();
+        playerInput.enabled = false;
+
+        GameEventManager.TriggerEvent(this, GameEventType.GameClear);
     }
 
 }

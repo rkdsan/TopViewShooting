@@ -3,58 +3,48 @@ using System.Collections.Generic;
 
 public enum GameEventType
 {
-    MonsterDead,
-    SectionClear,
-    SectionGroupClear,
+    OnMonsterDead,
+    GameClear,
 }
 
 public static class GameEventManager
 {
-    public static Dictionary<GameEventType, Dictionary<object, Action<object>>> eventDictionary 
-            = new Dictionary<GameEventType, Dictionary<object, Action<object>>>();
+    private static Dictionary<GameEventType, Action<object>> _eventDictionary = new Dictionary<GameEventType, Action<object>>();
 
-    public static void Attach(GameEventType eventType, object subject, Action<object> action)
+    public static void Attach(GameEventType eventType, Action<object> action)
     {
-        if (!eventDictionary.ContainsKey(eventType))
+        if (!_eventDictionary.ContainsKey(eventType))
         {
-            eventDictionary[eventType] = new Dictionary<object, Action<object>>();
-        }
-
-        if (!eventDictionary[eventType].ContainsKey(subject))
-        {
-            eventDictionary[eventType][subject] = action;
+            _eventDictionary[eventType] = action;
         }
         else
         {
-            eventDictionary[eventType][subject] += action;
+            _eventDictionary[eventType] += action;
         }
     }
 
-    public static void Detach(GameEventType eventType, object subject, Action<object> action)
+    public static void Detach(GameEventType eventType, Action<object> action)
     {
-        if (!HasKey(eventType, subject))
+        if (!_eventDictionary.ContainsKey(eventType))
+        {
             return;
+        }
 
-        eventDictionary[eventType][subject] -= action;
+        _eventDictionary[eventType] -= action;
     }
 
-    public static void TriggerEvent(GameEventType eventType, object subject)
+    public static void ClearAll()
     {
-        if (!HasKey(eventType, subject))
+        _eventDictionary.Clear();
+    }
+
+    public static void TriggerEvent(object sender, GameEventType eventType)
+    {
+        if (!_eventDictionary.ContainsKey(eventType))
+        {
             return;
+        }
 
-        eventDictionary[eventType][subject]?.Invoke(subject);
+        _eventDictionary[eventType]?.Invoke(sender);
     }
-
-    private static bool HasKey(GameEventType eventType, object subject)
-    {
-        if (!eventDictionary.ContainsKey(eventType))
-            return false;
-
-        if (!eventDictionary[eventType].ContainsKey(subject))
-            return false;
-
-        return true;
-    }
-
 }

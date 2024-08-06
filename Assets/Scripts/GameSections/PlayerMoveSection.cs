@@ -2,17 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerMoveSection : MonoBehaviour
+public class PlayerMoveSection : GameSection
 {
-    // Start is called before the first frame update
-    void Start()
+    public override void ActiveSection(PlayerController player)
     {
-        
+        gameObject.SetActive(true);
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnTriggerEnter(Collider other)
     {
-        
+        var player = other.GetComponent<PlayerController>();
+        if(player != null)
+        {
+            ClearSection();
+        }
     }
 }

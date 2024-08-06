@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Pool;
 
 public class Monster : MonoBehaviour, IDamageable
 {
@@ -11,16 +12,21 @@ public class Monster : MonoBehaviour, IDamageable
     public bool IsDead { get; private set; }
     public float AttackRange { get; private set; }
 
+    public delegate void MonsterEventHandler(Monster sender);
+    public event MonsterEventHandler MonsterDeadEvent;
+
     [SerializeField] private ProgressBar _healthBar;
 
     private StateMachine<Monster> _stateMachine;
+    private MonsterFactory _pool;
 
     private int _currentHealth;
     private int _maxHealth;
 
     private void Awake()
     {
-        Init();
+        Animator = GetComponent<Animator>();
+        NavAgent = GetComponent<NavMeshAgent>();
     }
 
     private void Update()
@@ -30,10 +36,7 @@ public class Monster : MonoBehaviour, IDamageable
 
     public void Init()
     {
-        Animator = GetComponent<Animator>();
-        NavAgent = GetComponent<NavMeshAgent>();
-
-        AttackRange = 3;
+        AttackRange = 4;
         _currentHealth = _maxHealth = 5;
         _stateMachine = new StateMachine<Monster>(this);
         _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
@@ -43,6 +46,11 @@ public class Monster : MonoBehaviour, IDamageable
     public void SetTarget(Transform target)
     {
         Target = target;
+    }
+
+    public void SetPool(MonsterFactory pool)
+    {
+        _pool = pool;
     }
 
     public void TakeDamage(int damage)
@@ -81,8 +89,17 @@ public class Monster : MonoBehaviour, IDamageable
     private void Die()
     {
         IsDead = true;
-        gameObject.SetActive(false);
-        GameEventManager.TriggerEvent(GameEventType.MonsterDead, this);
+        MonsterDeadEvent(this);
+        GameEventManager.TriggerEvent(this, GameEventType.OnMonsterDead);
+
+        if(_pool != null)
+        {
+            _pool.Release(this);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnDrawGizmos()

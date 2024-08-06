@@ -17,6 +17,8 @@ public abstract class MonsterState : IState<Monster>
 
 public class MonsterIdleState : MonsterState
 {
+    private Coroutine _changeMoveStateRoutine;
+
     public MonsterIdleState(StateMachine<Monster> stateMachine) : base(stateMachine)
     {
         
@@ -25,7 +27,7 @@ public class MonsterIdleState : MonsterState
     public override void OnEnter(Monster monster)
     {
         monster.Animator.SetTrigger("Idle");
-        m
+        _changeMoveStateRoutine = monster.StartCoroutine(ChangeMoveState());
     }
 
     public override void OnUpdate(Monster monster)
@@ -34,6 +36,20 @@ public class MonsterIdleState : MonsterState
         {
             _stateMachine.ChangeState(new MonsterAttackState(_stateMachine));
         }
+    }
+
+    public override void OnExit(Monster monster)
+    {
+        if (_changeMoveStateRoutine!= null)
+        {
+            monster.StopCoroutine(_changeMoveStateRoutine);
+        }
+    }
+
+    private IEnumerator ChangeMoveState()
+    {
+        yield return WaitTimeManager.GetWaitTime(1);
+        _stateMachine.ChangeState(new MonsterMoveState(_stateMachine));
     }
 }
 
@@ -88,6 +104,8 @@ public class MonsterAttackState : MonsterState
 
     public override void OnEnter(Monster monster)
     {
+        monster.NavAgent.SetDestination(monster.transform.position);
+
         var targetPos = monster.Target.position;
         targetPos.y = monster.transform.position.y;
         monster.transform.LookAt(targetPos);
@@ -111,10 +129,9 @@ public class MonsterAttackState : MonsterState
             yield return null;
         }
 
-        while (monster.Animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
-        {
-            yield return null;
-        }
+        var attackAnim = monster.Animator.GetCurrentAnimatorStateInfo(0);
+        if (attackAnim.IsName("Attack"))
+            yield return WaitTimeManager.GetWaitTime(attackAnim.length);
 
         _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
     }
@@ -123,6 +140,6 @@ public class MonsterAttackState : MonsterState
     {
         var positionGap = monster.transform.position - monster.Target.position;
 
-        return positionGap.sqrMagnitude < 9;
+        return positionGap.sqrMagnitude < monster.AttackRange * monster.AttackRange;
     }
 }

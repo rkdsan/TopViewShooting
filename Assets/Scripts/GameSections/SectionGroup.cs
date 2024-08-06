@@ -8,16 +8,17 @@ public class SectionGroup : GameSection
 
     public override void ActiveSection(PlayerController player)
     {
+        gameObject.SetActive(true);
         foreach (var section in sections)
         {
-            GameEventManager.Attach(GameEventType.SectionClear, section, OnClearSection);
+            section.SectionClearEvent += OnClearSection;
             section.ActiveSection(player);
         }
     }
 
-    private void OnClearSection(object eventEmitter)
+    private void OnClearSection(GameSection sender)
     {
-        Debug.Log("Section Group에서 Section Clear 받음");
+        sender.SectionClearEvent -= OnClearSection;
 
         bool isAllClear = sections.All(t => t.IsClear);
         if (isAllClear)

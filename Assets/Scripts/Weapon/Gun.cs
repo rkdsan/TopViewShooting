@@ -5,28 +5,44 @@ using UnityEngine.TextCore.Text;
 
 public class Gun : Weapon
 {
-    [SerializeField] private ParticleSystem _fireEffect;
+    public float AttackRange { get; private set; }
+    public int AttackDamage { get; private set; }
 
-    private float _attackRange = 10;
+    [SerializeField] private ParticleSystem _fireEffect;
+    [SerializeField] private ParticleSystem _bulletEffect;
+
+    private void Awake()
+    {
+        AttackDamage = 1;
+        SetAttackRange(10);
+    }
 
     private void Update()
     {
-        Debug.DrawRay(transform.position, transform.forward * _attackRange, Color.red);
+        Debug.DrawRay(transform.position, transform.forward * AttackRange, Color.red);
     }
 
     public override void Attack()
     {
-        bool isHit = Physics.Raycast(transform.position, transform.forward, out var hit, _attackRange, LayerManager.CombatTargetLayer);
+        bool isHit = Physics.Raycast(transform.position, transform.forward, out var hit, AttackRange, LayerManager.CombatTargetLayer);
         if (isHit)
         {
             var damageable = hit.transform.GetComponent<IDamageable>();
             if (damageable != null )
             {
-                damageable.TakeDamage(1);
+                damageable.TakeDamage(AttackDamage);
             }
         }
 
         _fireEffect.Play();
+    }
 
+    private void SetAttackRange(int newAttackRange)
+    {
+        AttackRange = newAttackRange;
+        var mainModule = _bulletEffect.main;
+
+        float newLifeTime = AttackRange / mainModule.startSpeed.constant;
+        mainModule.startLifetime = newLifeTime;
     }
 }

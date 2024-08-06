@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour, IDamageable
 {
+
     [SerializeField] private Weapon _weapon;
-    [SerializeField] private float _moveSpeed = 3;
     private PlayerView _playerView;
     private Rigidbody _rigidbody;
 
@@ -15,10 +15,23 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private IPlayerUI _playerUI;
     private Vector2 _moveInputVector;
-    
+
+    private void Awake()
+    {
+        _mainCamera = Camera.main;
+        _playerView = GetComponent<PlayerView>();
+        _rigidbody = GetComponent<Rigidbody>();
+    }
+
+    private void Update()
+    {
+        Move();
+    }
+
     public void SetPlayerUI(IPlayerUI playerUI)
     {
         _playerUI = playerUI;
+        _playerUI?.UpdateHP(_playerModel.CurrentHP, _playerModel.MaxHP);
     }
 
     public void TakeDamage(int damage)
@@ -27,40 +40,23 @@ public class PlayerController : MonoBehaviour, IDamageable
         _playerUI?.UpdateHP(_playerModel.CurrentHP, _playerModel.MaxHP);
     }
 
-    private void Awake()
-    {
-        _mainCamera = Camera.main;
-        _playerView = GetComponent<PlayerView>();
-        _rigidbody = GetComponent<Rigidbody>();
-
-        Init();
-    }
-
-    private void Update()
-    {
-        Move();
-        Rotation();
-    }
-
-    private void Init()
+    public void Init()
     {
         _playerModel = new PlayerModel();
-        _playerUI?.UpdateHP(_playerModel.CurrentHP, _playerModel.MaxHP);
     }
 
     private void Move()
     {
-        var moveVector = _moveInputVector * _moveSpeed * Time.deltaTime;
+        var moveVector = _moveInputVector * _playerModel.MoveSpeed * Time.deltaTime;
         var addPosition = new Vector3(moveVector.x, 0, moveVector.y);
 
         _rigidbody.MovePosition(transform.position + addPosition);
         _playerView.OnPlayerMove(moveVector);
     }
 
-    private void Rotation()
+    private void Rotation(Vector2 mousePosition)
     {
         var myPosition = _mainCamera.WorldToScreenPoint(transform.position);
-        var mousePosition = Input.mousePosition;
 
         var angle = Mathf.Atan2(mousePosition.y - myPosition.y, mousePosition.x - myPosition.x) * Mathf.Rad2Deg;
 
@@ -71,6 +67,12 @@ public class PlayerController : MonoBehaviour, IDamageable
     private void OnMove(InputValue inputValue)
     {
         _moveInputVector = inputValue.Get<Vector2>().normalized;
+    }
+
+    private void OnMousePosition(InputValue inputValue)
+    {
+        var mousePosition = inputValue.Get<Vector2>();
+        Rotation(mousePosition);
     }
 
     private void OnAttack()

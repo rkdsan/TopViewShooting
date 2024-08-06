@@ -5,7 +5,10 @@ using UnityEngine;
 
 public class MonsterSpawnSection : GameSection
 {
-    [SerializeField] private List<Monster> _spawnMonsters;
+    [SerializeField] private List<Transform> _spawnTransforms;
+    [SerializeField] private MonsterFactory _monsterPool;
+
+    private List<Monster> _spawnedMonsters;
 
     public override void ActiveSection(PlayerController player)
     {
@@ -14,20 +17,23 @@ public class MonsterSpawnSection : GameSection
 
     private void SpawnMonsters(PlayerController player)
     {
-        var centerPosition = transform.position;
-        foreach (var monster in _spawnMonsters)
+        _spawnedMonsters = new List<Monster>(_spawnTransforms.Count);
+
+        foreach (var targetTransform in _spawnTransforms)
         {
-            GameEventManager.Attach(GameEventType.MonsterDead, monster, OnDeadMonster);
-            monster.gameObject.SetActive(true);
+            var monster = _monsterPool.SpawnMonster(targetTransform.position);
             monster.SetTarget(player.transform);
+            monster.MonsterDeadEvent += OnDeadMonster;
+
+            _spawnedMonsters.Add(monster);
         }
     }
 
-    private void OnDeadMonster(object eventEmitter)
+    private void OnDeadMonster(Monster monster)
     {
-        GameEventManager.Detach(GameEventType.MonsterDead, eventEmitter, OnDeadMonster);
+        monster.MonsterDeadEvent -= OnDeadMonster;
 
-        bool isAllDead = _spawnMonsters.All(t => t.IsDead);
+        bool isAllDead = _spawnedMonsters.All(monster => monster.IsDead);
         if (isAllDead)
         {
             ClearSection();
