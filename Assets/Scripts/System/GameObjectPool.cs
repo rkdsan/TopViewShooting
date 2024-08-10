@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Pool;
 
-public abstract class GameObjectPool<T> : MonoBehaviour where T : Component
+public abstract class GameObjectPool<T> :MonoBehaviour where T : Component
 {
     private IObjectPool<T> _pool;
     public IObjectPool<T> Pool

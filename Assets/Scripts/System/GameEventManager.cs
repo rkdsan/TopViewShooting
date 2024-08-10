@@ -3,8 +3,12 @@ using System.Collections.Generic;
 
 public enum GameEventType
 {
-    OnMonsterDead,
+    MonsterDead,
+    SectionClear,
     GameClear,
+    GameEnd,
+    ScoreUpdated,
+    SetActivePlayerInput,
 }
 
 public static class GameEventManager
@@ -38,13 +42,13 @@ public static class GameEventManager
         _eventDictionary.Clear();
     }
 
-    public static void TriggerEvent(object sender, GameEventType eventType)
+    public static void TriggerEvent(GameEventType eventType, object param)
     {
         if (!_eventDictionary.ContainsKey(eventType))
         {
             return;
         }
 
-        _eventDictionary[eventType]?.Invoke(sender);
+        _eventDictionary[eventType]?.Invoke(param);
     }
 }

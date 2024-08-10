@@ -5,10 +5,10 @@ public class PlayerModel
     public int CurrentHP { get; private set; }
     public float MoveSpeed { get; private set; }
 
-    public PlayerModel()
+    public PlayerModel(PlayerSO playerData)
     {
-        CurrentHP = MaxHP = 100;
-        MoveSpeed = 3;
+        CurrentHP = MaxHP = playerData.MaxHP;
+        MoveSpeed = playerData.MoveSpeed;
     }
 
     public void TakeDamage(int damage)

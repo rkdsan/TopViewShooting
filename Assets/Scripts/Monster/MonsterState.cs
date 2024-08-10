@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections;
 using UnityEngine;
 
@@ -141,5 +142,45 @@ public class MonsterAttackState : MonsterState
         var positionGap = monster.transform.position - monster.Target.position;
 
         return positionGap.sqrMagnitude < monster.AttackRange * monster.AttackRange;
+    }
+}
+
+public class MonsterSpawnState : MonsterState
+{
+    public MonsterSpawnState(StateMachine<Monster> stateMachine) : base(stateMachine)
+    {
+
+    }
+
+    public override void OnEnter(Monster monster)
+    {
+        monster.Collider.enabled = false;
+        DOTween.To(dissolve => monster.SetDissolve(dissolve), 0f, 1f, 2f)
+               .OnComplete(() => 
+               {
+                   _stateMachine.ChangeState(new MonsterMoveState(_stateMachine));
+                });
+    }
+
+    public override void OnExit(Monster monster)
+    {
+        monster.Collider.enabled = true;
+    }
+}
+
+public class MonsterDeadState : MonsterState
+{
+    public MonsterDeadState(StateMachine<Monster> stateMachine) : base(stateMachine)
+    {
+
+    }
+
+    public override void OnEnter(Monster monster)
+    {
+        monster.Collider.enabled = false;
+        monster.NavAgent.SetDestination(monster.transform.position);
+
+        DOTween.To(() => 1f, dissolve => monster.SetDissolve(dissolve), 0, 2)
+               .OnComplete(() => monster.InActive());
     }
 }

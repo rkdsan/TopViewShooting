@@ -1,38 +1,39 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class MonsterFactory : GameObjectPool<Monster>
+public class MonsterFactory : MonoBehaviour
 {
-    [SerializeField] private Monster _monsterPrefab;
+    [SerializeField] private MonsterPool _poolPrefab;
     [SerializeField] private GameObject _monsterCreateEffect;
-    [SerializeField] private GameObject _monsterReleaseEffect;
 
-    public Monster SpawnMonster(Vector3 spawnPosition)
+    private static MonsterFactory _Instance;
+    private Dictionary<MonsterSO, MonsterPool> _monsterPool = new Dictionary<MonsterSO, MonsterPool>();
+
+    private void Awake()
     {
-        var monster = Pool.Get();
+        _Instance = this;
+    }
+
+    public static Monster CreateMonster(MonsterSO monsterData, Vector3 spawnPosition)
+    {
+        var pool = _Instance.GetPool(monsterData);
+        var monster = pool.Pool.Get();
         monster.NavAgent.Warp(spawnPosition);
-        Instantiate(_monsterCreateEffect, spawnPosition, Quaternion.identity);
+        Instantiate(_Instance._monsterCreateEffect, spawnPosition, Quaternion.identity);
 
         return monster;
     }
 
-    protected override Monster OnCreate()
+    private MonsterPool GetPool(MonsterSO monsterData)
     {
-        var monster = Instantiate(_monsterPrefab);
-        monster.SetPool(this);
+        if (!_monsterPool.ContainsKey(monsterData))
+        {
+            var newPool = Instantiate(_poolPrefab, transform);
+            newPool.SetData(monsterData);
+            _monsterPool[monsterData] = newPool;
+        }
 
-        return monster;
-    }
-
-    protected override void OnGet(Monster item)
-    {
-        item.gameObject.SetActive(true);
-        item.Init();
-    }
-
-    protected override void OnRelease(Monster item)
-    {
-        item.gameObject.SetActive(false);
-
-        Instantiate(_monsterReleaseEffect, item.transform.position, Quaternion.identity);
+        return _monsterPool[monsterData];
     }
 }

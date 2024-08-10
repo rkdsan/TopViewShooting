@@ -2,31 +2,31 @@ using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Pool;
 
-public class Monster : MonoBehaviour, IDamageable
+public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
 {
     public Transform Target { get; private set; }
     public NavMeshAgent NavAgent { get; private set; }
     public Animator Animator { get; private set; }
-    public bool IsDead { get; private set; }
-    public float AttackRange { get; private set; }
+    public Collider Collider { get; private set; }
+    public bool IsAlive => _monsterModel.IsAlive;
+    public float AttackRange => _monsterModel.AttackRange;
 
     public delegate void MonsterEventHandler(Monster sender);
     public event MonsterEventHandler MonsterDeadEvent;
 
+    [SerializeField] private MaterialPropertySetter _dissolveSetter;
     [SerializeField] private ProgressBar _healthBar;
 
+    private MonsterModel _monsterModel;
     private StateMachine<Monster> _stateMachine;
-    private MonsterFactory _pool;
-
-    private int _currentHealth;
-    private int _maxHealth;
+    private MonsterPool _pool;
 
     private void Awake()
     {
         Animator = GetComponent<Animator>();
         NavAgent = GetComponent<NavMeshAgent>();
+        Collider = GetComponent<Collider>();
     }
 
     private void Update()
@@ -34,13 +34,14 @@ public class Monster : MonoBehaviour, IDamageable
         _stateMachine.Update();
     }
 
-    public void Init()
+    public void Init(MonsterSO monsterData)
     {
-        AttackRange = 4;
-        _currentHealth = _maxHealth = 5;
+        _monsterModel = new MonsterModel(monsterData, this);
+
+        NavAgent.Warp(transform.position);
+
         _stateMachine = new StateMachine<Monster>(this);
-        _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
-        SetHealth(_currentHealth);
+        _stateMachine.ChangeState(new MonsterSpawnState(_stateMachine));
     }
 
     public void SetTarget(Transform target)
@@ -48,19 +49,48 @@ public class Monster : MonoBehaviour, IDamageable
         Target = target;
     }
 
-    public void SetPool(MonsterFactory pool)
+    public void SetPool(MonsterPool pool)
     {
         _pool = pool;
     }
 
     public void TakeDamage(int damage)
     {
-        SetHealth(_currentHealth - damage);
+        _monsterModel.TakeDamage(damage);
     }
 
     public void AnimationEvent_Attack()
     {
         Attack();
+    }
+
+    public void SetDissolve(float value)
+    {
+        _dissolveSetter.SetValue("_Dissolve", value);
+    }
+
+    public void OnChangeHP(int currentHP, int maxHP)
+    {
+        _healthBar.UpdateBar(currentHP, maxHP);
+    }
+
+    public void OnDead()
+    {
+        MonsterDeadEvent(this);
+        GameEventManager.TriggerEvent(GameEventType.MonsterDead, this);
+        _stateMachine.ChangeState(new MonsterDeadState(_stateMachine));
+    }
+
+    public void InActive()
+    {
+        if (_pool != null)
+        {
+            _pool.Release(this);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Attack()
@@ -71,34 +101,7 @@ public class Monster : MonoBehaviour, IDamageable
 
         foreach (var player in players)
         {
-            player.TakeDamage(1);
-        }
-    }
-
-    private void SetHealth(int newHealth)
-    {
-        _currentHealth = Math.Max(0, newHealth);
-        _healthBar.UpdateBar(_currentHealth, _maxHealth);
-
-        if (_currentHealth == 0)
-        {
-            Die();
-        }
-    }
-
-    private void Die()
-    {
-        IsDead = true;
-        MonsterDeadEvent(this);
-        GameEventManager.TriggerEvent(this, GameEventType.OnMonsterDead);
-
-        if(_pool != null)
-        {
-            _pool.Release(this);
-        }
-        else
-        {
-            Destroy(gameObject);
+            player.TakeDamage(_monsterModel.AttackPower);
         }
     }
 

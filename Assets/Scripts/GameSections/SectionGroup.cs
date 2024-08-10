@@ -8,10 +8,14 @@ public class SectionGroup : GameSection
 
     public override void ActiveSection(PlayerController player)
     {
+        var data = (SectionGroupSO)SectionData;
+
         gameObject.SetActive(true);
-        foreach (var section in sections)
+        for(int i =  0; i < sections.Count; i++)
         {
+            var section = sections[i];
             section.SectionClearEvent += OnClearSection;
+            section.SetSectionData(data.SectionList[i]);
             section.ActiveSection(player);
         }
     }

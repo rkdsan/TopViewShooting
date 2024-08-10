@@ -1,14 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour, IDamageable
 {
-
     [SerializeField] private Weapon _weapon;
     private PlayerView _playerView;
     private Rigidbody _rigidbody;
+    private PlayerInput _playerInput;
 
     private Camera _mainCamera;
     private PlayerModel _playerModel;
@@ -21,6 +19,7 @@ public class PlayerController : MonoBehaviour, IDamageable
         _mainCamera = Camera.main;
         _playerView = GetComponent<PlayerView>();
         _rigidbody = GetComponent<Rigidbody>();
+        _playerInput = GetComponent<PlayerInput>();
     }
 
     private void Update()
@@ -40,9 +39,10 @@ public class PlayerController : MonoBehaviour, IDamageable
         _playerUI?.UpdateHP(_playerModel.CurrentHP, _playerModel.MaxHP);
     }
 
-    public void Init()
+    public void Init(PlayerSO playerData)
     {
-        _playerModel = new PlayerModel();
+        _playerModel = new PlayerModel(playerData);
+        GameEventManager.Attach(GameEventType.SetActivePlayerInput, OnSetActivePlayerInput);
     }
 
     private void Move()
@@ -64,6 +64,15 @@ public class PlayerController : MonoBehaviour, IDamageable
     }
 
     #region PlayerInput
+
+    private void OnSetActivePlayerInput(object isActive)
+    {
+        if (_playerInput != null)
+        {
+            _playerInput.enabled = (bool)isActive;
+        }
+    }
+    
     private void OnMove(InputValue inputValue)
     {
         _moveInputVector = inputValue.Get<Vector2>().normalized;
@@ -79,11 +88,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     {
         _weapon.Attack();
         _playerView.OnPlayerAttack();
-    }
-
-    private void OnJump()
-    {
-
     }
 
     #endregion
