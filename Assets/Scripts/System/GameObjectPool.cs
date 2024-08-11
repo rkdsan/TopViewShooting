@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Pool;
 
-public abstract class GameObjectPool<T> :MonoBehaviour where T : Component
+public abstract class GameObjectPool<T> where T : Component
 {
     private IObjectPool<T> _pool;
     public IObjectPool<T> Pool
@@ -26,7 +26,6 @@ public abstract class GameObjectPool<T> :MonoBehaviour where T : Component
     protected abstract void OnRelease(T item);
     protected virtual void DestroyItem(T item)
     {
-        //GameEventManager.DetachAllEvent(item);
-        Destroy(item.gameObject);
+        GameObject.Destroy(item.gameObject);
     }
 }

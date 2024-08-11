@@ -5,7 +5,7 @@ public class MonsterPool : GameObjectPool<Monster>
 {
     private MonsterSO _monsterData;
 
-    public void SetData(MonsterSO monsterData)
+    public MonsterPool(MonsterSO monsterData)
     {
         _monsterData = monsterData;
     }
@@ -13,7 +13,7 @@ public class MonsterPool : GameObjectPool<Monster>
     protected override Monster OnCreate()
     {
         var prefab = Resources.Load($"Prefabs/Monsters/{_monsterData.Character}");
-        var go = Instantiate(prefab, transform);
+        var go = GameObject.Instantiate(prefab);
         var monster = go.GetComponent<Monster>();
         monster.SetPool(this);
 

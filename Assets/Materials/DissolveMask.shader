@@ -34,11 +34,9 @@ Shader "Custom/DissolveMask"
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             fixed4 dissolve = tex2D (_DissolveTex, IN.uv_DissolveTex);
-            fixed alpha = dissolve.r;
-            alpha = step(alpha, _Dissolve - 0.03);
+            fixed alpha = step(dissolve.r, _Dissolve - 0.03);
             if(alpha == 1)
                 discard;
-            o.Alpha = alpha;
         }
         ENDCG
     }
