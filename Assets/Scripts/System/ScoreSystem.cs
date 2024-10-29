@@ -8,15 +8,15 @@ public class ScoreSystem
     {
         GameScore = 0;
 
-        GameEventManager.Attach(GameEventType.MonsterDead, OnMonsterDead);
-        GameEventManager.Attach(GameEventType.SectionClear, OnSectionClear);
+        EventManager.Subcribe(EventType.MonsterDead, OnMonsterDead);
+        EventManager.Subcribe(EventType.SectionClear, OnSectionClear);
     }
     
     private void AddScore(int addValue)
     {
         GameScore += addValue;
         GameScore = Math.Max(0, GameScore);
-        GameEventManager.TriggerEvent(GameEventType.ScoreUpdated, GameScore);
+        EventManager.TriggerEvent(EventType.ScoreUpdated, GameScore);
     }
 
     private void OnMonsterDead(object param)

@@ -18,7 +18,7 @@ public class ScoreUI : MonoBehaviour
         _lastUpdatedScore = 0;
         UpdateScoreText(_lastUpdatedScore);
 
-        GameEventManager.Attach(GameEventType.ScoreUpdated, OnScoreUpdate);
+        EventManager.Subcribe(EventType.ScoreUpdated, OnScoreUpdate);
     }
 
     private void OnScoreUpdate(object newScore)

@@ -19,7 +19,7 @@ public class GameUI : MonoBehaviour
         _endUI.gameObject.SetActive(false);
         _pauseUI.gameObject.SetActive(false);
         
-        GameEventManager.Attach(GameEventType.GameClear, OnGameClear);
+        EventManager.Subcribe(EventType.GameClear, OnGameClear);
     }
 
     public void SetPlayerUI(PlayerController playerController)

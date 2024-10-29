@@ -9,11 +9,6 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
     public NavMeshAgent NavAgent { get; private set; }
     public Animator Animator { get; private set; }
     public Collider Collider { get; private set; }
-    public bool IsAlive => _monsterModel.IsAlive;
-    public float AttackRange => _monsterModel.AttackRange;
-
-    public delegate void MonsterEventHandler(Monster sender);
-    public event MonsterEventHandler MonsterDeadEvent;
 
     [SerializeField] private MaterialPropertySetter _dissolveSetter;
     [SerializeField] private ProgressBar _healthBar;
@@ -44,9 +39,27 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
         _stateMachine.ChangeState(new MonsterSpawnState(_stateMachine));
     }
 
-    public void SetTarget(Transform target)
+    public bool CanAttack()
     {
-        Target = target;
+        return false;
+    }
+
+    public bool CanChase(bool setTarget)
+    {
+        var targets = Physics.SphereCastAll(transform.position, _monsterModel.ChaseRange, Vector3.zero);
+        var target = targets.FirstOrDefault(t => t.transform.GetComponent<PlayerController>() != null);
+        if (target.transform == null)
+            return false;
+
+        if (setTarget)
+        {
+            Target = target.transform;
+        }
+
+        var distance = (transform.position - target.transform.position).sqrMagnitude;
+        var chaseRange = _monsterModel.ChaseRange * _monsterModel.ChaseRange;
+
+        return distance < chaseRange;
     }
 
     public void SetPool(MonsterPool pool)
@@ -76,8 +89,7 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
 
     public void OnDead()
     {
-        MonsterDeadEvent(this);
-        GameEventManager.TriggerEvent(GameEventType.MonsterDead, this);
+        EventManager.TriggerEvent(EventType.MonsterDead, this);
         _stateMachine.ChangeState(new MonsterDeadState(_stateMachine));
     }
 
@@ -108,6 +120,6 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, AttackRange);
+        Gizmos.DrawWireSphere(transform.position, _monsterModel.AttackRange);
     }
 }

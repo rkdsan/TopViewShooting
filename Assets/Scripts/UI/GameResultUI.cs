@@ -6,7 +6,7 @@ public class GameResultUI : PopupUI
 {
     protected override void OnConfirmButton()
     {
-        GameEventManager.TriggerEvent(GameEventType.GameEnd, null);
+        EventManager.TriggerEvent(EventType.GameEnd, null);
     }
 
 }

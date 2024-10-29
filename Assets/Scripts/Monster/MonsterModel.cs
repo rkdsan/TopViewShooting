@@ -12,6 +12,7 @@ public class MonsterModel
     public int MaxHP { get; private set; }
     public int CurrentHP { get; private set; }
     public float AttackRange { get; private set; }
+    public float ChaseRange { get; private set; }
     public int AttackPower { get; private set; }
     public bool IsAlive { get; private set; }
 

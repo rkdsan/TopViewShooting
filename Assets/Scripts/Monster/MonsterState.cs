@@ -33,7 +33,7 @@ public class MonsterIdleState : MonsterState
 
     public override void OnUpdate(Monster monster)
     {
-        if (MonsterAttackState.CanAttack(monster))
+        if (monster.CanAttack())
         {
             _stateMachine.ChangeState(new MonsterAttackState(_stateMachine));
         }
@@ -70,7 +70,11 @@ public class MonsterMoveState : MonsterState
 
     public override void OnUpdate(Monster monster)
     {
-        if (MonsterAttackState.CanAttack(monster))
+        if (!monster.CanChase(false))
+        {
+            _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
+        }
+        else if (monster.CanAttack())
         {
             _stateMachine.ChangeState(new MonsterAttackState(_stateMachine));
         }
@@ -135,13 +139,6 @@ public class MonsterAttackState : MonsterState
             yield return WaitTimeManager.GetWaitTime(attackAnim.length);
 
         _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
-    }
-
-    public static bool CanAttack(Monster monster)
-    {
-        var positionGap = monster.transform.position - monster.Target.position;
-
-        return positionGap.sqrMagnitude < monster.AttackRange * monster.AttackRange;
     }
 }
 

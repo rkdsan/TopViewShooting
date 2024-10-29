@@ -24,18 +24,17 @@ public class MonsterSpawnSection : GameSection
             var monsterData = data.MonsterList[i];
 
             var monster = MonsterFactory.CreateMonster(monsterData, targetPosition);
-            monster.SetTarget(player.transform);
-            monster.MonsterDeadEvent += OnDeadMonster;
+            EventManager.Subcribe(monster, EventType.MonsterDead, OnDeadMonster);
 
             _spawnedMonsters.Add(monster);
         }
     }
 
-    private void OnDeadMonster(Monster monster)
+    private void OnDeadMonster(object sender)
     {
-        monster.MonsterDeadEvent -= OnDeadMonster;
+        _spawnedMonsters.Remove((Monster)sender);
 
-        bool isAllDead = _spawnedMonsters.All(monster => !monster.IsAlive);
+        bool isAllDead = _spawnedMonsters.Count == 0;
         if (isAllDead)
         {
             ClearSection();

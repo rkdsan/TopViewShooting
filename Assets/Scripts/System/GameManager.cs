@@ -23,8 +23,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameStart()
     {
-        GameEventManager.ClearAll();
-        GameEventManager.Attach(GameEventType.GameEnd, EndGame);
+        EventManager.ClearAll();
+        EventManager.Subcribe(EventType.GameEnd, EndGame);
 
         _scoreSystem = new ScoreSystem();
 
@@ -74,14 +74,14 @@ public class GameManager : MonoBehaviour
 
     private bool IsAllClear()
     {
-        return _currentSectionGroupIndex >= _sectionGroups.Count - 1;
+        return _currentSectionGroupIndex >= _sectionGroups.Count;
     }
 
     private void ClearGame()
     {
         Debug.Log("게임 클리어");
-        GameEventManager.TriggerEvent(GameEventType.SetActivePlayerInput, false);
-        GameEventManager.TriggerEvent(GameEventType.GameClear, this);
+        EventManager.TriggerEvent(EventType.SetActivePlayerInput, false);
+        EventManager.TriggerEvent(EventType.GameClear, this);
     }
 
     private void EndGame(object param)

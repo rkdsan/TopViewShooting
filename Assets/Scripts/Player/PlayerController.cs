@@ -42,7 +42,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     public void Init(PlayerSO playerData)
     {
         _playerModel = new PlayerModel(playerData);
-        GameEventManager.Attach(GameEventType.SetActivePlayerInput, OnSetActivePlayerInput);
+        EventManager.Subcribe(EventType.SetActivePlayerInput, OnSetActivePlayerInput);
     }
 
     private void Move()

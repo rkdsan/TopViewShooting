@@ -27,8 +27,8 @@ public class Gun : Weapon
         bool isHit = Physics.Raycast(transform.position, transform.forward, out var hit, AttackRange, LayerManager.CombatTargetLayer);
         if (isHit)
         {
-            var damageable = hit.transform.GetComponent<IDamageable>();
-            if (damageable != null )
+            bool isDamageable = hit.transform.TryGetComponent<IDamageable>(out var damageable);
+            if (isDamageable)
             {
                 damageable.TakeDamage(AttackDamage);
             }
@@ -40,9 +40,9 @@ public class Gun : Weapon
     private void SetAttackRange(int newAttackRange)
     {
         AttackRange = newAttackRange;
-        var mainModule = _bulletEffect.main;
+        var particleModule = _bulletEffect.main;
 
-        float newLifeTime = AttackRange / mainModule.startSpeed.constant;
-        mainModule.startLifetime = newLifeTime;
+        float newLifeTime = AttackRange / particleModule.startSpeed.constant;
+        particleModule.startLifetime = newLifeTime;
     }
 }
