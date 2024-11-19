@@ -1,5 +1,6 @@
 using DG.Tweening;
 using System.Collections;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public abstract class MonsterState : IState<Monster>
@@ -33,15 +34,16 @@ public class MonsterIdleState : MonsterState
 
     public override void OnUpdate(Monster monster)
     {
-        if (monster.CanAttack())
+        var target = monster.FindAttackTarget();
+        if(target != null)
         {
-            _stateMachine.ChangeState(new MonsterAttackState(_stateMachine));
+            _stateMachine.ChangeState(new MonsterAttackState(_stateMachine, target));
         }
     }
 
     public override void OnExit(Monster monster)
     {
-        if (_changeMoveStateRoutine!= null)
+        if (_changeMoveStateRoutine != null)
         {
             monster.StopCoroutine(_changeMoveStateRoutine);
         }
@@ -56,64 +58,52 @@ public class MonsterIdleState : MonsterState
 
 public class MonsterMoveState : MonsterState
 {
-    private Coroutine _moveRoutine;
 
     public MonsterMoveState(StateMachine<Monster> stateMachine) : base(stateMachine)
     {
 
     }
 
-    public override void OnEnter(Monster monster)
-    {
-        _moveRoutine = monster.StartCoroutine(MoveRoutine(monster));
-    }
-
     public override void OnUpdate(Monster monster)
     {
-        if (!monster.CanChase(false))
+        var attackTarget = monster.FindAttackTarget();
+        if (attackTarget != null)
+        {
+            _stateMachine.ChangeState(new MonsterAttackState(_stateMachine, attackTarget));
+            return;
+        }
+
+        var chaseTarget = monster.FindChaseTarget();
+        if (chaseTarget != null)
         {
             _stateMachine.ChangeState(new MonsterIdleState(_stateMachine));
         }
-        else if (monster.CanAttack())
+        else
         {
-            _stateMachine.ChangeState(new MonsterAttackState(_stateMachine));
+            var targetPosition = (chaseTarget as MonoBehaviour).transform.position;
+            monster.SetDestination(targetPosition);
         }
     }
-
-    public override void OnExit(Monster monster)
-    {
-        if (_moveRoutine != null)
-            monster.StopCoroutine(_moveRoutine);
-    }
-
-    private IEnumerator MoveRoutine(Monster monster)
-    {
-        while (true)
-        {
-            monster.NavAgent.SetDestination(monster.Target.position);
-            yield return WaitTimeManager.GetWaitTime(2);
-        }
-    }
-
 }
 
 
 public class MonsterAttackState : MonsterState
 {
     private Coroutine _checkRoutine;
+    private ITargetable _target;
 
-    public MonsterAttackState(StateMachine<Monster> stateMachine) : base(stateMachine)
+    public MonsterAttackState(StateMachine<Monster> stateMachine, ITargetable target) : base(stateMachine)
     {
 
     }
 
     public override void OnEnter(Monster monster)
     {
-        monster.NavAgent.SetDestination(monster.transform.position);
+        monster.SetDestination(monster.transform.position); //¸ØÃáÃ¤·Î °ø°Ý
 
-        var targetPos = monster.Target.position;
-        targetPos.y = monster.transform.position.y;
-        monster.transform.LookAt(targetPos);
+        var targetPosition = (_target as MonoBehaviour).transform.position;
+        targetPosition.y = monster.transform.position.y;
+        monster.transform.LookAt(targetPosition);
 
         monster.Animator.SetTrigger("Attack");
         _checkRoutine = monster.StartCoroutine(CheckAttackEndRoutine(monster));
@@ -151,7 +141,7 @@ public class MonsterSpawnState : MonsterState
 
     public override void OnEnter(Monster monster)
     {
-        monster.Collider.enabled = false;
+        monster.DisableCollider();
         DOTween.To(dissolve => monster.SetDissolve(dissolve), 0f, 1f, 2f)
                .OnComplete(() => 
                {
@@ -161,7 +151,7 @@ public class MonsterSpawnState : MonsterState
 
     public override void OnExit(Monster monster)
     {
-        monster.Collider.enabled = true;
+        monster.EnableCollider();
     }
 }
 
@@ -174,8 +164,8 @@ public class MonsterDeadState : MonsterState
 
     public override void OnEnter(Monster monster)
     {
-        monster.Collider.enabled = false;
-        monster.NavAgent.SetDestination(monster.transform.position);
+        monster.DisableCollider();
+        monster.SetDestination(monster.transform.position);
 
         DOTween.To(() => 1f, dissolve => monster.SetDissolve(dissolve), 0, 2)
                .OnComplete(() => monster.InActive());

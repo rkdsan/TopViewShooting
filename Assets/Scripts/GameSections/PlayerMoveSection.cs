@@ -1,13 +1,13 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class PlayerMoveSection : GameSection
 {
     private void OnTriggerEnter(Collider other)
     {
-        var player = other.GetComponent<PlayerController>();
-        if(player != null)
+        bool isPlayer = players.Any(p => p == other);
+        if(isPlayer)
         {
             ClearSection();
         }

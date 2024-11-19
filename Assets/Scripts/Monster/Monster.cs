@@ -1,27 +1,29 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
 {
-    public Transform Target { get; private set; }
-    public NavMeshAgent NavAgent { get; private set; }
     public Animator Animator { get; private set; }
-    public Collider Collider { get; private set; }
 
     [SerializeField] private MaterialPropertySetter _dissolveSetter;
     [SerializeField] private ProgressBar _healthBar;
 
+    private NavMeshAgent _navAgent;
+    private Collider _collider;
     private MonsterModel _monsterModel;
     private StateMachine<Monster> _stateMachine;
     private MonsterPool _pool;
+    private TargetFinder _targetFinder;
+    private List<ITargetable> _potentialTargets;
 
     private void Awake()
     {
         Animator = GetComponent<Animator>();
-        NavAgent = GetComponent<NavMeshAgent>();
-        Collider = GetComponent<Collider>();
+        _navAgent = GetComponent<NavMeshAgent>();
+        _collider = GetComponent<Collider>();
     }
 
     private void Update()
@@ -29,37 +31,52 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
         _stateMachine.Update();
     }
 
+    private void Attack()
+    {
+        var attackRange = Vector3.one + Vector3.forward * 2;
+        var hits = Physics.BoxCastAll(transform.position, attackRange, transform.forward);
+        var players = hits.Select(hit => hit.transform.GetComponent<PlayerController>()).Where(player => player != null);
+
+        foreach (var player in players)
+        {
+            player.TakeDamage(_monsterModel.AttackPower);
+        }
+    }
+
+    #region Public ÇÔ¼ö
+
     public void Init(MonsterSO monsterData)
     {
         _monsterModel = new MonsterModel(monsterData, this);
 
-        NavAgent.Warp(transform.position);
+        _navAgent.Warp(transform.position);
 
         _stateMachine = new StateMachine<Monster>(this);
         _stateMachine.ChangeState(new MonsterSpawnState(_stateMachine));
     }
 
-    public bool CanAttack()
+    public void WarpPosition(Vector3 newPosition)
     {
-        return false;
+        _navAgent.Warp(newPosition);
     }
 
-    public bool CanChase(bool setTarget)
+    public void SetTargetable(List<ITargetable> targets)
     {
-        var targets = Physics.SphereCastAll(transform.position, _monsterModel.ChaseRange, Vector3.zero);
-        var target = targets.FirstOrDefault(t => t.transform.GetComponent<PlayerController>() != null);
-        if (target.transform == null)
-            return false;
+        _potentialTargets = targets.ToList();
+    }
 
-        if (setTarget)
-        {
-            Target = target.transform;
-        }
+    public ITargetable FindAttackTarget()
+    {
+        var target = _targetFinder.FindTarget(transform.position, _monsterModel.AttackRange, _potentialTargets);
 
-        var distance = (transform.position - target.transform.position).sqrMagnitude;
-        var chaseRange = _monsterModel.ChaseRange * _monsterModel.ChaseRange;
+        return target;
+    }
 
-        return distance < chaseRange;
+    public ITargetable FindChaseTarget()
+    {
+        var target = _targetFinder.FindTarget(transform.position, _monsterModel.ChaseRange, _potentialTargets);
+
+        return target;
     }
 
     public void SetPool(MonsterPool pool)
@@ -105,17 +122,21 @@ public class Monster : MonoBehaviour, IDamageable, IMonsterModelListener
         }
     }
 
-    private void Attack()
+    public void EnableCollider()
     {
-        var attackRange = Vector3.one + Vector3.forward * 2;
-        var hits = Physics.BoxCastAll(transform.position, attackRange, transform.forward);
-        var players = hits.Select(hit => hit.transform.GetComponent<PlayerController>()).Where(player => player != null);
-
-        foreach (var player in players)
-        {
-            player.TakeDamage(_monsterModel.AttackPower);
-        }
+        _collider.enabled = true;
     }
+    public void DisableCollider()
+    {
+        _collider.enabled = false;
+    }
+
+    public void SetDestination(Vector3 target)
+    {
+        _navAgent.SetDestination(target);
+    }
+
+    #endregion
 
     private void OnDrawGizmos()
     {

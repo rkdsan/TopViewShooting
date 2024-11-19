@@ -1,7 +1,12 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerController : MonoBehaviour, IDamageable
+public interface IPlayerController
+{
+
+}
+
+public class PlayerController : MonoBehaviour, IDamageable, IPlayerController
 {
     [SerializeField] private Weapon _weapon;
     private PlayerView _playerView;
